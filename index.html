@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>figma2code</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#09090b;--surface:#111113;--surface2:#18181b;--surface3:#222226;
+--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+--text:#fafafa;--text2:#a1a1aa;--text3:#71717a;
+--accent:#7c6ff7;--accent2:#a79ef9;--accent-bg:rgba(124,111,247,0.1);
+--green:#22c55e;--green-bg:rgba(34,197,94,0.1);
+--red:#ef4444;--radius:14px;--radius-sm:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(9,9,11,0.95)}
+.logo{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em}
+.logo em{color:var(--accent2);font-style:normal}
+.badges{display:flex;gap:8px}
+.badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.05em}
+.badge-free{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,0.2)}
+.badge-noapi{background:var(--accent-bg);color:var(--accent2);border:1px solid rgba(124,111,247,0.2)}
+.container{max-width:960px;margin:0 auto;padding:2.5rem 1.5rem;width:100%;flex:1}
+.hero{text-align:center;margin-bottom:2rem}
+.hero h1{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:700;letter-spacing:-0.03em;line-height:1.15;margin-bottom:0.6rem}
+.hero h1 span{color:var(--accent2)}
+.hero p{font-size:0.95rem;color:var(--text2);max-width:460px;margin:0 auto 1.25rem;line-height:1.6}
+.pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pill{font-size:12px;color:var(--text2);padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2)}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--surface);position:relative;margin-bottom:1.25rem}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent-bg)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:2.5rem;margin-bottom:0.75rem;display:block}
+.upload-zone h3{font-size:1rem;font-weight:600;margin-bottom:0.35rem}
+.upload-zone p{font-size:0.83rem;color:var(--text2)}
+.preview-wrap{margin-top:1rem;display:none}
+.preview-wrap img{max-height:220px;max-width:100%;border-radius:8px;border:1px solid var(--border2);object-fit:contain;display:block;margin:0 auto}
+.fname{display:inline-block;margin-top:6px;font-size:12px;color:var(--text2);background:var(--surface3);padding:3px 10px;border-radius:20px}
+.opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.8rem 1rem}
+.opt label{display:block;font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+.opt select,.opt input{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:0.88rem;font-family:inherit;cursor:pointer}
+.opt select option{background:#18181b}
+.toggle{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.8rem 1rem;margin-bottom:1.25rem;cursor:pointer}
+.toggle label{font-size:0.88rem;flex:1;cursor:pointer}
+.toggle small{font-size:0.76rem;color:var(--text3);display:block;margin-top:2px}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.gen-btn{width:100%;padding:0.9rem;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:1.5rem;font-family:inherit}
+.gen-btn:hover:not(:disabled){background:#6a5ef5;transform:translateY(-1px)}
+.gen-btn:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.progress{display:none;margin-bottom:1.5rem}
+.pbar-track{height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.pbar-fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.5s ease}
+.plabel{font-size:12px;color:var(--text2);text-align:center}
+.results{display:none}
+.res-header{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.res-header h2{font-size:1.1rem;font-weight:600;flex:1;letter-spacing:-0.02em}
+.status-pill{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,0.2)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:1.25rem}
+.icard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.8rem 1rem}
+.icard-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:5px}
+.icard-val{font-size:0.82rem;color:var(--text);line-height:1.5}
+.swatches{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.swatch{width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,0.1);cursor:help;transition:transform 0.15s}
+.swatch:hover{transform:scale(1.3)}
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:0.85rem;overflow-x:auto}
+.tab{padding:8px 14px;font-size:0.82rem;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:all 0.15s;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--text);border-bottom-color:var(--accent)}
+.tab.dim{opacity:0.35}
+.code-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1.1rem;font-family:'DM Mono',monospace;font-size:12px;line-height:1.7;color:#c4cad4;max-height:420px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.action-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.btn{padding:8px 16px;font-size:0.8rem;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;transition:all 0.15s;font-weight:500;border:1px solid var(--border2);background:var(--surface2);color:var(--text)}
+.btn:hover{background:var(--surface3)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:#6a5ef5}
+.btn-green{background:var(--green-bg);border-color:rgba(34,197,94,0.3);color:var(--green)}
+.err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:var(--radius-sm);padding:0.9rem 1.1rem;color:#fca5a5;font-size:0.85rem;display:none;margin-bottom:1rem}
+footer{text-align:center;padding:1.25rem;font-size:0.75rem;color:var(--text3);border-top:1px solid var(--border)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">figma<em>2code</em></div>
+  <div class="badges">
+    <!-- <span class="badge badge-free">Free</span>
+    <span class="badge badge-noapi">No API Key</span> -->
+  </div>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <h1>Figma Design to <span>HTML &amp; CSS</span></h1>
+    <p>Upload any UI screenshot or Figma export. Get production-ready HTML, CSS & Bootstrap code instantly.</p>
+    <div class="pills">
+      <span class="pill">No API Key</span>
+      <span class="pill">Semantic HTML5</span>
+      <span class="pill">Mobile-First CSS</span>
+      <span class="pill">Bootstrap Option</span>
+      <span class="pill">Download Files</span>
+    </div>
+  </div>
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp">
+    <span class="upload-icon">&#128444;&#65039;</span>
+    <h3>Drop your screenshot here</h3>
+    <p>PNG, JPG, WebP format accept hai</p>
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg" src="" alt="Uploaded design preview">
+      <span class="fname" id="fname"></span>
+    </div>
+  </div>
+
+  <div class="opts">
+    <div class="opt">
+      <label>Project Name</label>
+      <input type="text" id="projectName" value="my-project">
+    </div>
+    <div class="opt">
+      <label>Page Type</label>
+      <select id="pageType">
+        <option value="landing">Landing Page</option>
+        <option value="dashboard">Dashboard</option>
+        <option value="portfolio">Portfolio</option>
+        <option value="ecommerce">E-Commerce</option>
+        <option value="blog">Blog</option>
+        <option value="saas">SaaS App</option>
+        <option value="auth">Login / Auth</option>
+      </select>
+    </div>
+    <div class="opt">
+      <label>Color Theme</label>
+      <select id="colorTheme">
+        <option value="auto">Auto Detect</option>
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+        <option value="colorful">Colorful</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="toggle">
+    <input type="checkbox" id="bsToggle">
+    <label for="bsToggle">
+      Bootstrap 5 version also added
+      <small>A separate HTML file will also be created with the bootstrap classes.</small>
+    </label>
+  </div>
+
+  <div class="err" id="errBox"></div>
+
+  <button class="gen-btn" id="genBtn" disabled>Drop your design here</button>
+
+  <div class="progress" id="progressDiv">
+    <div class="pbar-track"><div class="pbar-fill" id="pbarFill"></div></div>
+    <div class="plabel" id="plabel">Please wait...</div>
+  </div>
+
+  <div class="results" id="resultsDiv">
+    <div class="res-header">
+      <h2 id="resTitle">Generated Code</h2>
+      <span class="status-pill">Ready to use</span>
+    </div>
+    <div class="info-grid" id="infoGrid"></div>
+    <div class="tab-bar">
+      <button class="tab active" data-tab="html">HTML</button>
+      <button class="tab" data-tab="css">CSS</button>
+      <button class="tab" data-tab="full">Full File</button>
+      <button class="tab dim" data-tab="bs" id="bsTab">Bootstrap</button>
+    </div>
+    <div class="code-box" id="codeBox"></div>
+    <div class="action-row">
+      <button class="btn" id="copyBtn">Copy Code</button>
+      <button class="btn btn-primary" id="dlHtml">Download HTML</button>
+      <button class="btn btn-primary" id="dlCss">Download CSS</button>
+      <button class="btn btn-green" id="dlAll">Download All (.zip)</button>
+    </div>
+  </div>
+</div>
+
+<footer>figma2code  &mdash; Pure HTML + CSS + JS</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+var state = { file:null, imgSrc:null, gen:{}, tab:'html' };
+
+function el(id){ return document.getElementById(id); }
+
+var uploadZone = el('uploadZone');
+var fileInput  = el('fileInput');
+var previewWrap= el('previewWrap');
+var previewImg = el('previewImg');
+var fname      = el('fname');
+var genBtn     = el('genBtn');
+var progressDiv= el('progressDiv');
+var pbarFill   = el('pbarFill');
+var plabel     = el('plabel');
+var resultsDiv = el('resultsDiv');
+var codeBox    = el('codeBox');
+var infoGrid   = el('infoGrid');
+var resTitle   = el('resTitle');
+var errBox     = el('errBox');
+
+uploadZone.addEventListener('dragover', function(e){ e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', function(){ uploadZone.classList.remove('drag-over'); });
+uploadZone.addEventListener('drop', function(e){ e.preventDefault(); uploadZone.classList.remove('drag-over'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', function(e){ if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file){
+  state.file = file;
+  var url = URL.createObjectURL(file);
+  state.imgSrc = url;
+  previewImg.src = url;
+  fname.textContent = file.name + ' — ' + (file.size/1024).toFixed(1) + ' KB';
+  previewWrap.style.display = 'block';
+  genBtn.disabled = false;
+  genBtn.textContent = 'Generate Code';
+  errBox.style.display = 'none';
+}
+
+var steps = [
+  [10,'Image load ho rahi hai...'],
+  [25,'Colors detect ho rahe hain...'],
+  [40,'Layout analyze ho raha hai...'],
+  [58,'Components map ho rahe hain...'],
+  [72,'HTML generate ho raha hai...'],
+  [88,'CSS likh raha hai...'],
+  [100,'Almost done...']
+];
+var stepI=0, stepTimer=null;
+
+function startProgress(){
+  stepI=0; pbarFill.style.width='4%'; plabel.textContent=steps[0][1];
+  stepTimer = setInterval(function(){
+    if(stepI < steps.length-1){ stepI++; pbarFill.style.width=steps[stepI][0]+'%'; plabel.textContent=steps[stepI][1]; }
+    else { clearInterval(stepTimer); }
+  }, 350);
+}
+function doneProgress(){ clearInterval(stepTimer); pbarFill.style.width='100%'; plabel.textContent='Code generate ho gaya!'; }
+
+function isHexDark(hex){
+  var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return (r*299+g*587+b*114)/1000 < 128;
+}
+function hexRgb(hex){
+  return parseInt(hex.slice(1,3),16)+','+parseInt(hex.slice(3,5),16)+','+parseInt(hex.slice(5,7),16);
+}
+function compToHex(c){ var h=c.toString(16); return h.length===1?'0'+h:h; }
+function rgbToHex(r,g,b){ return '#'+compToHex(r)+compToHex(g)+compToHex(b); }
+
+function extractColors(src, cb){
+  var canvas=document.createElement('canvas');
+  var ctx=canvas.getContext('2d');
+  var img=new Image();
+  img.onload=function(){
+    canvas.width=80; canvas.height=80;
+    ctx.drawImage(img,0,0,80,80);
+    var d=ctx.getImageData(0,0,80,80).data;
+    var map={};
+    for(var i=0;i<d.length;i+=12){
+      var r=Math.round(d[i]/32)*32, g=Math.round(d[i+1]/32)*32, b=Math.round(d[i+2]/32)*32;
+      if(d[i+3]<128) continue;
+      var k=r+','+g+','+b;
+      map[k]=(map[k]||0)+1;
+    }
+    var sorted=Object.entries(map).sort(function(a,b){return b[1]-a[1]}).slice(0,8).map(function(e){
+      var p=e[0].split(',').map(Number);
+      return rgbToHex(p[0],p[1],p[2]);
+    });
+    if(sorted.length<4) sorted=['#6c63ff','#ffffff','#111111','#f5f5f5','#f59e0b','#e5e7eb'];
+    cb(sorted);
+  };
+  img.onerror=function(){ cb(['#6c63ff','#ffffff','#111111','#f5f5f5','#f59e0b','#e5e7eb']); };
+  img.src=src;
+}
+
+function getComponents(pt){
+  var m={
+    landing:['navbar','hero','features','cards','testimonials','cta','footer'],
+    dashboard:['sidebar','topbar','stat-cards','data-table','footer'],
+    portfolio:['navbar','hero','projects-grid','skills','contact','footer'],
+    ecommerce:['navbar','hero-banner','product-grid','footer'],
+    blog:['navbar','hero','post-grid','footer'],
+    saas:['navbar','hero','features','pricing','cta','footer'],
+    auth:['navbar','auth-card','footer']
+  };
+  return m[pt]||m.landing;
+}
+
+function getFonts(pt){
+  var m={
+    landing:{h:'Sora',b:'DM Sans'},
+    dashboard:{h:'DM Sans',b:'DM Sans'},
+    portfolio:{h:'Playfair Display',b:'Lato'},
+    ecommerce:{h:'Nunito',b:'Open Sans'},
+    blog:{h:'Merriweather',b:'Source Sans 3'},
+    saas:{h:'Plus Jakarta Sans',b:'Inter'},
+    auth:{h:'DM Sans',b:'DM Sans'}
+  };
+  return m[pt]||m.landing;
+}
+
+function makeHTML(comps, colors, fonts, pname, bs){
+  var pri=colors[0]||'#6c63ff';
+  var txt=isHexDark(pri)?'ffffff':'111111';
+  var out='';
+
+  comps.forEach(function(c){
+    if(c==='navbar'){
+      out+='\n<!-- SECTION: Navbar -->\n';
+      out+='<header class="navbar" role="banner">\n';
+      out+='  <nav class="navbar__inner" role="navigation" aria-label="Main navigation">\n';
+      out+='    <a href="#" class="navbar__logo" aria-label="'+pname+' home">'+pname+'</a>\n';
+      out+='    <ul class="navbar__links" role="list">\n';
+      out+='      <li><a href="#features" class="navbar__link">Features</a></li>\n';
+      out+='      <li><a href="#about" class="navbar__link">About</a></li>\n';
+      out+='      <li><a href="#pricing" class="navbar__link">Pricing</a></li>\n';
+      out+='      <li><a href="#contact" class="navbar__link">Contact</a></li>\n';
+      out+='    </ul>\n';
+      out+='    <a href="#" class="btn btn--primary" role="button">Get Started</a>\n';
+      out+='  </nav>\n</header>\n';
+    }
+    else if(c==='hero'){
+      out+='\n<!-- SECTION: Hero -->\n';
+      out+='<section class="hero" aria-labelledby="hero-title">\n';
+      out+='  <div class="hero__inner">\n';
+      out+='    <h1 id="hero-title" class="hero__title">Build Something <span class="text--accent">Amazing</span></h1>\n';
+      out+='    <p class="hero__subtitle">The best platform to design, build, and launch your next big idea with confidence.</p>\n';
+      out+='    <div class="hero__actions">\n';
+      out+='      <a href="#" class="btn btn--primary" role="button">Start for Free</a>\n';
+      out+='      <a href="#" class="btn btn--outline" role="button">Watch Demo</a>\n';
+      out+='    </div>\n';
+      out+='    <img src="https://placehold.co/900x480/'+pri.replace('#','')+'/'+txt+'?text=Hero+Image" alt="Hero section illustration" class="hero__image" width="900" height="480">\n';
+      out+='  </div>\n</section>\n';
+    }
+    else if(c==='features'){
+      out+='\n<!-- SECTION: Features -->\n';
+      out+='<section class="features" id="features" aria-labelledby="features-title">\n';
+      out+='  <div class="section__inner">\n';
+      out+='    <h2 id="features-title" class="section__title">Why Choose Us</h2>\n';
+      out+='    <p class="section__subtitle">Everything you need to build faster</p>\n';
+      out+='    <div class="features__grid">\n';
+      var flist=[['Fast Performance','Built for speed with optimized code.'],['Secure','Enterprise-grade security built in.'],['Responsive','Looks perfect on every device.'],['Customizable','Easy to modify with CSS variables.']];
+      flist.forEach(function(f){
+        out+='      <article class="feature-card">\n';
+        out+='        <h3 class="feature-card__title">'+f[0]+'</h3>\n';
+        out+='        <p class="feature-card__text">'+f[1]+'</p>\n';
+        out+='      </article>\n';
+      });
+      out+='    </div>\n  </div>\n</section>\n';
+    }
+    else if(c==='cards'||c==='projects-grid'){
+      out+='\n<!-- SECTION: Cards -->\n';
+      out+='<section class="cards-section" aria-labelledby="cards-title">\n';
+      out+='  <div class="section__inner">\n';
+      out+='    <h2 id="cards-title" class="section__title">Our Work</h2>\n';
+      out+='    <div class="cards__grid">\n';
+      for(var i=1;i<=3;i++){
+        out+='      <article class="card">\n';
+        out+='        <img src="https://placehold.co/400x220/'+pri.replace('#','')+'/'+txt+'?text=Project+'+i+'" alt="Project '+i+' screenshot" class="card__image" width="400" height="220">\n';
+        out+='        <div class="card__body">\n';
+        out+='          <span class="card__tag">Design</span>\n';
+        out+='          <h3 class="card__title">Project Title '+i+'</h3>\n';
+        out+='          <p class="card__text">A brief description of this project and the problem it solves.</p>\n';
+        out+='        </div>\n';
+        out+='        <div class="card__footer"><a href="#" class="btn btn--outline btn--sm" aria-label="View Project '+i+'">View Project</a></div>\n';
+        out+='      </article>\n';
+      }
+      out+='    </div>\n  </div>\n</section>\n';
+    }
+    else if(c==='stat-cards'){
+      out+='\n<!-- SECTION: Stat Cards -->\n';
+      out+='<section class="stats" aria-label="Dashboard statistics">\n';
+      out+='  <div class="section__inner">\n';
+      out+='    <div class="stats__grid">\n';
+      var stats=[['Total Users','24,891'],['Revenue','$48,230'],['Projects','142'],['Satisfaction','98%']];
+      stats.forEach(function(s){
+        out+='      <div class="stat-card" role="region" aria-label="'+s[0]+'">\n';
+        out+='        <p class="stat-card__label">'+s[0]+'</p>\n';
+        out+='        <p class="stat-card__value">'+s[1]+'</p>\n';
+        out+='        <p class="stat-card__change">+12% this month</p>\n';
+        out+='      </div>\n';
+      });
+      out+='    </div>\n  </div>\n</section>\n';
+    }
+    else if(c==='testimonials'){
+      out+='\n<!-- SECTION: Testimonials -->\n';
+      out+='<section class="testimonials" aria-labelledby="test-title">\n';
+      out+='  <div class="section__inner">\n';
+      out+='    <h2 id="test-title" class="section__title">What Users Say</h2>\n';
+      out+='    <div class="testimonials__grid">\n';
+      var tlist=[['Sarah Ahmed','Developer'],['Ali Hassan','Designer'],['Zara Khan','Manager']];
+      tlist.forEach(function(t){
+        out+='      <figure class="testimonial-card">\n';
+        out+='        <blockquote class="testimonial-card__quote">"This tool saved me hours of work every week!"</blockquote>\n';
+        out+='        <figcaption class="testimonial-card__author">\n';
+        out+='          <img src="https://placehold.co/40x40/'+pri.replace('#','')+'/'+txt+'?text='+t[0][0]+'" alt="Portrait of '+t[0]+'" width="40" height="40" class="testimonial-card__avatar">\n';
+        out+='          <div><p class="testimonial-card__name">'+t[0]+'</p><p class="testimonial-card__role">'+t[1]+'</p></div>\n';
+        out+='        </figcaption>\n';
+        out+='      </figure>\n';
+      });
+      out+='    </div>\n  </div>\n</section>\n';
+    }
+    else if(c==='pricing'){
+      out+='\n<!-- SECTION: Pricing -->\n';
+      out+='<section class="pricing" id="pricing" aria-labelledby="pricing-title">\n';
+      out+='  <div class="section__inner">\n';
+      out+='    <h2 id="pricing-title" class="section__title">Simple Pricing</h2>\n';
+      out+='    <div class="pricing__grid">\n';
+      var plans=[['Starter','Free'],['Pro','$12/mo'],['Team','$29/mo']];
+      plans.forEach(function(p,idx){
+        out+='      <div class="pricing-card'+(idx===1?' pricing-card--featured':'')+'">\n';
+        out+='        <h3 class="pricing-card__plan">'+p[0]+'</h3>\n';
+        out+='        <p class="pricing-card__price">'+p[1]+'</p>\n';
+        out+='        <a href="#" class="btn btn--primary btn--full">Get '+p[0]+'</a>\n';
+        out+='      </div>\n';
+      });
+      out+='    </div>\n  </div>\n</section>\n';
+    }
+    else if(c==='cta'){
+      out+='\n<!-- SECTION: Call to Action -->\n';
+      out+='<section class="cta" aria-labelledby="cta-title">\n';
+      out+='  <div class="cta__inner">\n';
+      out+='    <h2 id="cta-title" class="cta__title">Ready to Get Started?</h2>\n';
+      out+='    <p class="cta__text">Join thousands of developers who trust our platform.</p>\n';
+      out+='    <a href="#" class="btn btn--outline" role="button">Start Free Today</a>\n';
+      out+='  </div>\n</section>\n';
+    }
+    else if(c==='auth-card'){
+      out+='\n<!-- SECTION: Auth Form -->\n';
+      out+='<main class="auth-page" role="main">\n';
+      out+='  <div class="auth-card">\n';
+      out+='    <h1 class="auth-card__title">Welcome Back</h1>\n';
+      out+='    <p class="auth-card__subtitle">Sign in to your account</p>\n';
+      out+='    <form class="auth-form" novalidate>\n';
+      out+='      <div class="form-group"><label for="email" class="form-label">Email</label><input type="email" id="email" class="form-input" placeholder="you@example.com" required aria-required="true"></div>\n';
+      out+='      <div class="form-group"><label for="password" class="form-label">Password</label><input type="password" id="password" class="form-input" placeholder="Enter password" required aria-required="true"></div>\n';
+      out+='      <button type="submit" class="btn btn--primary btn--full">Sign In</button>\n';
+      out+='    </form>\n';
+      out+='    <p class="auth-card__footer">No account? <a href="#">Sign up</a></p>\n';
+      out+='  </div>\n</main>\n';
+    }
+    else if(c==='footer'){
+      out+='\n<!-- SECTION: Footer -->\n';
+      out+='<footer class="footer" role="contentinfo">\n';
+      out+='  <div class="footer__inner">\n';
+      out+='    <div class="footer__grid">\n';
+      out+='      <div>\n';
+      out+='        <span class="footer__brand">'+pname+'</span>\n';
+      out+='        <p class="footer__tagline">Building the future, one pixel at a time.</p>\n';
+      out+='      </div>\n';
+      out+='      <div>\n';
+      out+='        <h4 class="footer__heading">Product</h4>\n';
+      out+='        <ul class="footer__links" role="list">\n';
+      out+='          <li><a href="#" class="footer__link">Features</a></li>\n';
+      out+='          <li><a href="#" class="footer__link">Pricing</a></li>\n';
+      out+='          <li><a href="#" class="footer__link">Docs</a></li>\n';
+      out+='        </ul>\n';
+      out+='      </div>\n';
+      out+='      <div>\n';
+      out+='        <h4 class="footer__heading">Company</h4>\n';
+      out+='        <ul class="footer__links" role="list">\n';
+      out+='          <li><a href="#" class="footer__link">About</a></li>\n';
+      out+='          <li><a href="#" class="footer__link">Blog</a></li>\n';
+      out+='          <li><a href="#" class="footer__link">Contact</a></li>\n';
+      out+='        </ul>\n';
+      out+='      </div>\n';
+      out+='    </div>\n';
+      out+='    <hr class="footer__divider">\n';
+      out+='    <p class="footer__copy">&copy; 2025 '+pname+'. All rights reserved.</p>\n';
+      out+='  </div>\n</footer>\n';
+    }
+  });
+  return out;
+}
+
+function makeCSS(colors, fonts, pname){
+  var pri=colors[0]||'#6c63ff';
+  var bg=colors[1]||'#ffffff';
+  var darkBg=isHexDark(bg);
+  var textCol=darkBg?'#f0f0f0':'#1a1a1a';
+  var bgCol=darkBg?'#0f0f10':bg;
+  var surfCol=darkBg?'#1a1a1d':'#ffffff';
+  var surf2Col=darkBg?'#222226':'#f8f8f8';
+  var borderCol=darkBg?'rgba(255,255,255,0.08)':'#e5e7eb';
+  var mutedCol=darkBg?'#a1a1aa':'#6b7280';
+  var acc=colors[4]||'#f59e0b';
+
+  return '/* ==============================================\n'
+    +'   Generated by figma2code (Free Version)\n'
+    +'   Project: '+pname+'\n'
+    +'   ============================================== */\n\n'
+    +'/* Google Fonts */\n'
+    +'@import url(\'https://fonts.googleapis.com/css2?family='+fonts.h.replace(/ /g,'+')
+    +':wght@400;600;700&family='+fonts.b.replace(/ /g,'+')+':wght@400;500&display=swap\');\n\n'
+    +'/* CSS Variables */\n'
+    +':root {\n'
+    +'  --color-primary:   '+pri+';\n'
+    +'  --color-bg:        '+bgCol+';\n'
+    +'  --color-text:      '+textCol+';\n'
+    +'  --color-muted:     '+mutedCol+';\n'
+    +'  --color-surface:   '+surfCol+';\n'
+    +'  --color-surface2:  '+surf2Col+';\n'
+    +'  --color-border:    '+borderCol+';\n'
+    +'  --color-accent:    '+acc+';\n'
+    +'  --font-heading: \''+fonts.h+'\', sans-serif;\n'
+    +'  --font-body:    \''+fonts.b+'\', sans-serif;\n'
+    +'  --container:    1200px;\n'
+    +'  --pad:          1.5rem;\n'
+    +'  --radius-sm:    8px;\n'
+    +'  --radius-md:    12px;\n'
+    +'  --radius-lg:    18px;\n'
+    +'  --shadow-sm:    0 1px 4px rgba(0,0,0,0.08);\n'
+    +'  --shadow-md:    0 4px 16px rgba(0,0,0,0.12);\n'
+    +'  --shadow-lg:    0 8px 32px rgba(0,0,0,0.16);\n'
+    +'  --transition:   200ms ease;\n'
+    +'}\n\n'
+    +'/* Reset */\n'
+    +'*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\n'
+    +'html { scroll-behavior: smooth; }\n'
+    +'body { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--color-text); background: var(--color-bg); -webkit-font-smoothing: antialiased; }\n'
+    +'img { max-width: 100%; height: auto; display: block; }\n'
+    +'a { color: var(--color-primary); text-decoration: none; transition: opacity var(--transition); }\n'
+    +'a:hover { opacity: 0.8; }\n'
+    +'ul[role="list"] { list-style: none; }\n'
+    +'h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; line-height: 1.2; }\n\n'
+    +'/* Utilities */\n'
+    +'.container { max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }\n'
+    +'.text--accent { color: var(--color-primary); }\n'
+    +'.section__inner { max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }\n'
+    +'.section__title { font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; text-align: center; margin-bottom: 0.75rem; }\n'
+    +'.section__subtitle { font-size: 1.05rem; color: var(--color-muted); text-align: center; margin-bottom: 3rem; }\n\n'
+    +'/* Buttons */\n'
+    +'.btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.65rem 1.35rem; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; font-family: var(--font-body); border: 2px solid transparent; transition: all var(--transition); cursor: pointer; text-decoration: none; white-space: nowrap; }\n'
+    +'.btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }\n'
+    +'.btn--primary { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }\n'
+    +'.btn--primary:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: var(--shadow-md); }\n'
+    +'.btn--outline { background: transparent; color: var(--color-primary); border-color: var(--color-primary); }\n'
+    +'.btn--outline:hover { background: var(--color-primary); color: #fff; }\n'
+    +'.btn--full { width: 100%; }\n'
+    +'.btn--sm { padding: 0.4rem 0.85rem; font-size: 0.8rem; }\n\n'
+    +'/* Navbar */\n'
+    +'.navbar { position: sticky; top: 0; z-index: 100; background: rgba('+hexRgb(bgCol)+',0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--color-border); padding: 1rem 0; }\n'
+    +'.navbar__inner { display: flex; align-items: center; gap: 2rem; max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }\n'
+    +'.navbar__logo { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700; color: var(--color-text); }\n'
+    +'.navbar__links { display: flex; align-items: center; gap: 1.5rem; margin-left: auto; list-style: none; }\n'
+    +'.navbar__link { font-size: 0.9rem; font-weight: 500; color: var(--color-muted); transition: color var(--transition); }\n'
+    +'.navbar__link:hover { color: var(--color-text); }\n\n'
+    +'/* Hero */\n'
+    +'.hero { padding: 5rem 0; text-align: center; }\n'
+    +'.hero__inner { max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }\n'
+    +'.hero__title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; margin-bottom: 1.25rem; }\n'
+    +'.hero__subtitle { font-size: 1.1rem; color: var(--color-muted); max-width: 540px; margin: 0 auto 2rem; line-height: 1.7; }\n'
+    +'.hero__actions { display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 3rem; }\n'
+    +'.hero__image { width: 100%; max-width: 900px; height: auto; margin: 0 auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }\n\n'
+    +'/* Features */\n'
+    +'.features { padding: 5rem 0; background: var(--color-surface2); }\n'
+    +'.features__grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; margin-top: 1rem; }\n'
+    +'.feature-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 2rem; transition: all 0.3s; }\n'
+    +'.feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }\n'
+    +'.feature-card__title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; }\n'
+    +'.feature-card__text { color: var(--color-muted); font-size: 0.9rem; line-height: 1.6; }\n\n'
+    +'/* Cards */\n'
+    +'.cards-section { padding: 5rem 0; }\n'
+    +'.cards__grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 3rem; }\n'
+    +'.card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; transition: all 0.3s; }\n'
+    +'.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }\n'
+    +'.card__image { width: 100%; aspect-ratio: 16/9; object-fit: cover; }\n'
+    +'.card__body { padding: 1.25rem; }\n'
+    +'.card__tag { font-size: 0.75rem; font-weight: 600; background: rgba('+hexRgb(pri)+',0.1); color: var(--color-primary); padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 0.75rem; }\n'
+    +'.card__title { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }\n'
+    +'.card__text { color: var(--color-muted); font-size: 0.85rem; line-height: 1.6; }\n'
+    +'.card__footer { padding: 1rem 1.25rem; border-top: 1px solid var(--color-border); }\n\n'
+    +'/* Testimonials */\n'
+    +'.testimonials { padding: 5rem 0; background: var(--color-surface2); }\n'
+    +'.testimonials__grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }\n'
+    +'.testimonial-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 2rem; }\n'
+    +'.testimonial-card__quote { font-size: 0.95rem; line-height: 1.7; margin-bottom: 1.25rem; font-style: italic; }\n'
+    +'.testimonial-card__author { display: flex; align-items: center; gap: 0.75rem; }\n'
+    +'.testimonial-card__avatar { border-radius: 50%; width: 44px; height: 44px; }\n'
+    +'.testimonial-card__name { font-weight: 600; font-size: 0.9rem; }\n'
+    +'.testimonial-card__role { font-size: 0.78rem; color: var(--color-muted); }\n\n'
+    +'/* Pricing */\n'
+    +'.pricing { padding: 5rem 0; }\n'
+    +'.pricing__grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 3rem; }\n'
+    +'.pricing-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 2rem; transition: all 0.3s; }\n'
+    +'.pricing-card--featured { border-color: var(--color-primary); border-width: 2px; transform: scale(1.03); }\n'
+    +'.pricing-card__plan { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }\n'
+    +'.pricing-card__price { font-size: 2rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1.5rem; }\n\n'
+    +'/* CTA */\n'
+    +'.cta { padding: 5rem 0; background: var(--color-primary); text-align: center; }\n'
+    +'.cta__inner { max-width: 600px; margin: 0 auto; padding: 0 var(--pad); }\n'
+    +'.cta__title { font-size: clamp(1.75rem,4vw,2.5rem); font-weight: 700; color: #fff; margin-bottom: 1rem; }\n'
+    +'.cta__text { font-size: 1.05rem; color: rgba(255,255,255,0.85); margin-bottom: 2rem; }\n\n'
+    +'/* Stats */\n'
+    +'.stats { padding: 2rem 0; }\n'
+    +'.stats__grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; }\n'
+    +'.stat-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem; }\n'
+    +'.stat-card__label { font-size: 0.85rem; color: var(--color-muted); margin-bottom: 0.5rem; }\n'
+    +'.stat-card__value { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }\n'
+    +'.stat-card__change { font-size: 0.8rem; color: #22c55e; }\n\n'
+    +'/* Auth */\n'
+    +'.auth-page { min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }\n'
+    +'.auth-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 2.5rem; width: 100%; max-width: 420px; }\n'
+    +'.auth-card__title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }\n'
+    +'.auth-card__subtitle { color: var(--color-muted); margin-bottom: 2rem; }\n'
+    +'.auth-form { display: flex; flex-direction: column; gap: 1.25rem; }\n'
+    +'.form-group { display: flex; flex-direction: column; gap: 0.4rem; }\n'
+    +'.form-label { font-size: 0.88rem; font-weight: 500; }\n'
+    +'.form-input { padding: 0.65rem 0.9rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); font-size: 0.9rem; outline: none; transition: border-color var(--transition); }\n'
+    +'.form-input:focus { border-color: var(--color-primary); }\n'
+    +'.auth-card__footer { text-align: center; margin-top: 1.5rem; font-size: 0.88rem; color: var(--color-muted); }\n\n'
+    +'/* Footer */\n'
+    +'.footer { padding: 4rem 0 2rem; background: var(--color-surface); border-top: 1px solid var(--color-border); }\n'
+    +'.footer__inner { max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }\n'
+    +'.footer__grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; margin-bottom: 2.5rem; }\n'
+    +'.footer__brand { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; display: block; margin-bottom: 0.75rem; }\n'
+    +'.footer__tagline { color: var(--color-muted); font-size: 0.88rem; line-height: 1.6; }\n'
+    +'.footer__heading { font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }\n'
+    +'.footer__links { display: flex; flex-direction: column; gap: 0.75rem; list-style: none; }\n'
+    +'.footer__link { font-size: 0.88rem; color: var(--color-muted); transition: color var(--transition); }\n'
+    +'.footer__link:hover { color: var(--color-text); }\n'
+    +'.footer__divider { border: none; border-top: 1px solid var(--color-border); margin-bottom: 1.5rem; }\n'
+    +'.footer__copy { font-size: 0.82rem; color: var(--color-muted); text-align: center; }\n\n'
+    +'/* Responsive Tablet 768px+ */\n'
+    +'@media (min-width: 768px) {\n'
+    +'  .features__grid { grid-template-columns: repeat(2,1fr); }\n'
+    +'  .cards__grid { grid-template-columns: repeat(2,1fr); }\n'
+    +'  .testimonials__grid { grid-template-columns: repeat(2,1fr); }\n'
+    +'  .stats__grid { grid-template-columns: repeat(2,1fr); }\n'
+    +'  .footer__grid { grid-template-columns: 1fr 1fr; }\n'
+    +'}\n\n'
+    +'/* Responsive Desktop 1024px+ */\n'
+    +'@media (min-width: 1024px) {\n'
+    +'  .features__grid { grid-template-columns: repeat(4,1fr); }\n'
+    +'  .cards__grid { grid-template-columns: repeat(3,1fr); }\n'
+    +'  .testimonials__grid { grid-template-columns: repeat(3,1fr); }\n'
+    +'  .pricing__grid { grid-template-columns: repeat(3,1fr); }\n'
+    +'  .stats__grid { grid-template-columns: repeat(4,1fr); }\n'
+    +'  .footer__grid { grid-template-columns: 2fr 1fr 1fr; }\n'
+    +'}\n\n'
+    +'/* Responsive Mobile max 767px */\n'
+    +'@media (max-width: 767px) {\n'
+    +'  .hero__title { font-size: 1.9rem; }\n'
+    +'  .hero__actions { flex-direction: column; align-items: center; }\n'
+    +'  .features__grid,.cards__grid,.testimonials__grid,.pricing__grid,.stats__grid { grid-template-columns: 1fr; }\n'
+    +'  .footer__grid { grid-template-columns: 1fr; gap: 1.5rem; }\n'
+    +'  .navbar__links { display: none; }\n'
+    +'  .pricing-card--featured { transform: none; }\n'
+    +'}\n';
+}
+
+function buildFull(body, css, title, fonts, bs){
+  var h=fonts.h.replace(/ /g,'+'), b=fonts.b.replace(/ /g,'+');
+  var bsLink=bs?'\n  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">':'';
+  var bsJs=bs?'\n<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"><\/script>':'';
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>'+title+'</title>\n  <link rel="preconnect" href="https://fonts.googleapis.com">\n  <link href="https://fonts.googleapis.com/css2?family='+h+':wght@400;600;700&family='+b+':wght@400;500&display=swap" rel="stylesheet">'+bsLink+'\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n\n'+body+'\n'+bsJs+'\n</body>\n</html>';
+}
+
+el('genBtn').addEventListener('click', function(){
+  if(!state.file) return;
+  errBox.style.display='none';
+  resultsDiv.style.display='none';
+  progressDiv.style.display='block';
+  genBtn.disabled=true;
+  startProgress();
+
+  var pt=el('pageType').value;
+  var pname=el('projectName').value||'my-project';
+  var bs=el('bsToggle').checked;
+
+  extractColors(state.imgSrc, function(colors){
+    setTimeout(function(){
+      try {
+        var comps=getComponents(pt);
+        var fonts=getFonts(pt);
+        var htmlBody=makeHTML(comps,colors,fonts,pname,false);
+        var css=makeCSS(colors,fonts,pname);
+        var full=buildFull(htmlBody,css,pname,fonts,false);
+        var bsFull=bs?buildFull(makeHTML(comps,colors,fonts,pname,true),css,pname+'_bootstrap',fonts,true):'';
+
+        state.gen={htmlBody:htmlBody,css:css,full:full,bsFull:bsFull,colors:colors,fonts:fonts,comps:comps,pname:pname};
+
+        doneProgress();
+        setTimeout(function(){
+          progressDiv.style.display='none';
+          genBtn.disabled=false;
+          genBtn.textContent='Generate Again';
+
+          infoGrid.innerHTML='<div class="icard"><div class="icard-lbl">Components</div><div class="icard-val">'+comps.join(', ')+'</div></div>'
+            +'<div class="icard"><div class="icard-lbl">Page Type</div><div class="icard-val">'+pt+'</div></div>'
+            +'<div class="icard"><div class="icard-lbl">Fonts</div><div class="icard-val">'+fonts.h+' / '+fonts.b+'</div></div>'
+            +'<div class="icard"><div class="icard-lbl">Colors</div><div class="icard-val"><div class="swatches">'+colors.slice(0,6).map(function(c){return '<div class="swatch" style="background:'+c+'" title="'+c+'"></div>';}).join('')+'</div></div></div>';
+
+          resTitle.textContent=pname;
+          if(bs){ el('bsTab').classList.remove('dim'); }
+          setTab('html');
+          resultsDiv.style.display='block';
+          resultsDiv.scrollIntoView({behavior:'smooth'});
+        },400);
+      } catch(err){
+        doneProgress();
+        progressDiv.style.display='none';
+        genBtn.disabled=false;
+        errBox.textContent='Error: '+err.message;
+        errBox.style.display='block';
+      }
+    },1000);
+  });
+});
+
+function setTab(t){
+  state.tab=t;
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.toggle('active',b.dataset.tab===t); });
+  var g=state.gen;
+  var map={html:g.htmlBody||'',css:g.css||'',full:g.full||'',bs:g.bsFull||'<!-- Bootstrap toggle enable karke regenerate karo -->'};
+  codeBox.textContent=map[t]||'';
+}
+
+document.querySelectorAll('.tab').forEach(function(b){
+  b.addEventListener('click', function(){ setTab(b.dataset.tab); });
+});
+
+el('copyBtn').addEventListener('click', function(){
+  navigator.clipboard.writeText(codeBox.textContent).then(function(){
+    el('copyBtn').textContent='Copied!';
+    setTimeout(function(){ el('copyBtn').textContent='Copy Code'; },2000);
+  });
+});
+
+function dlFile(content, name, mime){
+  var blob=new Blob([content],{type:mime});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+el('dlHtml').addEventListener('click', function(){ dlFile(state.gen.full,'index.html','text/html'); });
+el('dlCss').addEventListener('click', function(){ dlFile(state.gen.css,'styles.css','text/css'); });
+el('dlAll').addEventListener('click', async function(){
+  var g=state.gen;
+  var zip=new JSZip();
+  zip.file('index.html', g.full||'');
+  zip.file('styles.css', g.css||'');
+  if(g.bsFull) zip.file('index-bootstrap.html', g.bsFull);
+  zip.file('README.md','# '+g.pname+'\n\nGenerated by figma2code Free Version\n\n## Files\n- index.html\n- styles.css\n'+(g.bsFull?'- index-bootstrap.html\n':'')+'## Usage\n1. Open index.html in browser\n2. Edit :root variables in styles.css\n3. Replace placeholder images\n');
+  var blob=await zip.generateAsync({type:'blob'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(g.pname||'figma2code')+'.zip';
+  a.click();
+});
+</script>
+</body>
+</html>
