@@ -721,7 +721,7 @@ function setTab(t){
   state.tab=t;
   document.querySelectorAll('.tab').forEach(function(b){ b.classList.toggle('active',b.dataset.tab===t); });
   var g=state.gen;
-  var map={html:g.htmlBody||'',css:g.css||'',full:g.full||'',bs:g.bsFull||'<!-- Bootstrap toggle enable karke regenerate karo -->'};
+  var map={html:g.htmlBody||'',css:g.css||'',full:g.full||'',bs:g.bsFull||'<!-- Enable Bootstrap toggle and regenerate it. -->'};
   codeBox.textContent=map[t]||'';
 }
 
